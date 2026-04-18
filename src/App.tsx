@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { SwapCard } from './components/SwapCard';
 import { SendCard } from './components/SendCard';
-import { BridgeCard } from './components/BridgeCard';
+import { ERC8183Card } from './components/ERC8183Card';
 import { WalletButton } from './components/WalletButton';
 import { useWallet } from './hooks/useWallet';
 import { AlertCircle } from 'lucide-react';
@@ -11,7 +10,7 @@ const isIframe = window !== window.parent;
 
 export default function App() {
   const { address, adapter, isConnecting, connect, disconnect } = useWallet();
-  const [activeTab, setActiveTab] = useState<'swap' | 'send' | 'bridge'>('swap');
+  const [activeTab, setActiveTab] = useState<'send' | 'jobs'>('jobs');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -19,7 +18,7 @@ export default function App() {
       <header className="px-8 py-4 flex items-center justify-between border-b border-border">
         <div className="flex items-center gap-2.5 text-xl font-bold tracking-tight">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3d6eff] to-[#ff3dbe]"></div>
-          Arc App Kit
+          Arc Agentic App
         </div>
         <WalletButton 
           address={address} 
@@ -45,31 +44,23 @@ export default function App() {
         {/* Tab Selector */}
         <div className="flex bg-input p-1 rounded-full w-full max-w-[480px]">
           <button 
-            onClick={() => setActiveTab('swap')}
-            className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all ${activeTab === 'swap' ? 'bg-card text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+            onClick={() => setActiveTab('jobs')}
+            className={`flex-1 py-1.5 text-sm font-semibold rounded-full transition-all ${activeTab === 'jobs' ? 'bg-[#3d6eff] text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
           >
-            Swap
+            Agentic Jobs (ERC-8183)
           </button>
           <button 
             onClick={() => setActiveTab('send')}
-            className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all ${activeTab === 'send' ? 'bg-card text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+            className={`flex-1 py-1.5 text-sm font-semibold rounded-full transition-all ${activeTab === 'send' ? 'bg-[#3d6eff] text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
           >
-            Send
-          </button>
-          <button 
-            onClick={() => setActiveTab('bridge')}
-            className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all ${activeTab === 'bridge' ? 'bg-card text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
-          >
-            Bridge
+            Send USDC
           </button>
         </div>
 
-        {activeTab === 'swap' ? (
-          <SwapCard adapter={adapter} address={address} />
-        ) : activeTab === 'send' ? (
+        {activeTab === 'send' ? (
           <SendCard adapter={adapter} address={address} />
         ) : (
-          <BridgeCard adapter={adapter} address={address} />
+          <ERC8183Card address={address} />
         )}
         
         <div className="absolute bottom-5 left-5 text-xs text-text-secondary flex items-center gap-1.5">
