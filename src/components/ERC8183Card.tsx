@@ -123,7 +123,8 @@ export function ERC8183Card({ address }: ERC8183Props) {
             desc, 
             '0x0000000000000000000000000000000000000000'
           ],
-          account
+          account,
+          chain: arcTestnet
         });
       } 
       else if (action === 'budget') {
@@ -133,7 +134,8 @@ export function ERC8183Card({ address }: ERC8183Props) {
           abi,
           functionName: 'setBudget',
           args: [BigInt(jobId), parseUnits(amount, 6), '0x'],
-          account
+          account,
+          chain: arcTestnet
         });
       } 
       else if (action === 'fund') {
@@ -144,7 +146,8 @@ export function ERC8183Card({ address }: ERC8183Props) {
           abi: usdcAbi,
           functionName: 'approve',
           args: [ERC8183_ADDRESS, parseUnits(amount, 6)],
-          account
+          account,
+          chain: arcTestnet
         });
         
         // Wait for receipt
@@ -157,7 +160,8 @@ export function ERC8183Card({ address }: ERC8183Props) {
           abi,
           functionName: 'fund',
           args: [BigInt(jobId), '0x'],
-          account
+          account,
+          chain: arcTestnet
         });
       } 
       else if (action === 'submit') {
@@ -167,7 +171,8 @@ export function ERC8183Card({ address }: ERC8183Props) {
           abi,
           functionName: 'submit',
           args: [BigInt(jobId), hashValue as `0x${string}`, '0x'],
-          account
+          account,
+          chain: arcTestnet
         });
       } 
       else if (action === 'complete') {
@@ -177,7 +182,8 @@ export function ERC8183Card({ address }: ERC8183Props) {
           abi,
           functionName: 'complete',
           args: [BigInt(jobId), hashValue as `0x${string}`, '0x'],
-          account
+          account,
+          chain: arcTestnet
         });
       }
 
