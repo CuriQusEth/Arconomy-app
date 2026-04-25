@@ -52,66 +52,45 @@ export function SwapCard({ address, adapter }: SwapCardProps) {
 
     try {
       let hash = null;
-      let usedAppKit = false;
+      
+      const publicClient = createPublicClient({ 
+        chain: ARC_TESTNET_CONFIG,
+        transport: http('https://rpc.testnet.arc.network') 
+      });
+      const walletClient = createWalletClient({ 
+        chain: ARC_TESTNET_CONFIG,
+        transport: custom(window.ethereum as any) 
+      });
 
-      if (adapter) {
-        try {
-          const result = await kit.swap({
-            from: { adapter, chain: 'Arc_Testnet' },
-            tokenIn: tokenIn,
-            tokenOut: tokenOut,
-            amountIn: amountIn,
-            config: {
-              kitKey: import.meta.env.VITE_KIT_KEY || '',
-            }
-          });
-          hash = result.txHash;
-          usedAppKit = true;
-        } catch (kitError: any) {
-          console.warn("AppKit swap failed, falling back to Viem:", kitError);
-        }
-      }
+      const dec = 6; 
+      const parsedAmount = parseUnits(amountIn, dec);
+      const addressIn = TOKENS[tokenIn];
+      const addressOut = TOKENS[tokenOut];
 
-      if (!hash) {
-        const publicClient = createPublicClient({ 
-          chain: ARC_TESTNET_CONFIG,
-          transport: http('https://rpc.testnet.arc.network') 
-        });
-        const walletClient = createWalletClient({ 
-          chain: ARC_TESTNET_CONFIG,
-          transport: custom(window.ethereum as any) 
-        });
+      const { request: approveReq } = await publicClient.simulateContract({
+        address: addressIn as `0x${string}`,
+        abi: ERC20_ABI as any,
+        functionName: 'approve',
+        args: [CORE_CONTRACT as `0x${string}`, parsedAmount],
+        account: address as `0x${string}`,
+      });
+      const approveHash = await walletClient.writeContract(approveReq as any);
+      await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
-        const dec = 6; 
-        const parsedAmount = parseUnits(amountIn, dec);
-        const addressIn = TOKENS[tokenIn];
-        const addressOut = TOKENS[tokenOut];
-
-        const { request: approveReq } = await publicClient.simulateContract({
-          address: addressIn as `0x${string}`,
-          abi: ERC20_ABI as any,
-          functionName: 'approve',
-          args: [CORE_CONTRACT as `0x${string}`, parsedAmount],
-          account: address as `0x${string}`,
-        });
-        const approveHash = await walletClient.writeContract(approveReq as any);
-        await publicClient.waitForTransactionReceipt({ hash: approveHash });
-
-        const minAmountOut = 0n; 
-        const { request: swapReq } = await publicClient.simulateContract({
-          address: CORE_CONTRACT as `0x${string}`,
-          abi: CORE_ABI as any,
-          functionName: 'swap',
-          args: [addressIn as `0x${string}`, addressOut as `0x${string}`, parsedAmount, minAmountOut],
-          account: address as `0x${string}`,
-        });
-        hash = await walletClient.writeContract(swapReq as any);
-        await publicClient.waitForTransactionReceipt({ hash });
-      }
+      const minAmountOut = 0n; 
+      const { request: swapReq } = await publicClient.simulateContract({
+        address: CORE_CONTRACT as `0x${string}`,
+        abi: CORE_ABI as any,
+        functionName: 'swap',
+        args: [addressIn as `0x${string}`, addressOut as `0x${string}`, parsedAmount, minAmountOut],
+        account: address as `0x${string}`,
+      });
+      hash = await walletClient.writeContract(swapReq as any);
+      await publicClient.waitForTransactionReceipt({ hash });
 
       setTxHash(hash);
       setTxStatus('success');
-      logAction(`Swap Tokens (${usedAppKit ? 'AppKit' : 'Viem'})`, address, `Swapped ${amountIn} ${tokenIn} → ${tokenOut}. TxHash: ${hash}`);
+      logAction(`Swap Tokens (Arc Network)`, address, `Swapped ${amountIn} ${tokenIn} → ${tokenOut}. TxHash: ${hash}`);
 
     } catch (error: any) {
       setErrorMessage(error.shortMessage || error.message || 'Swap başarısız.');
