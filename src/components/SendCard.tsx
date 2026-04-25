@@ -44,21 +44,29 @@ export function SendCard({ address, adapter }: SendCardProps) {
     setTxHash(null);
 
     try {
+      let hash = null;
+      let usedAppKit = false;
+
       if (adapter) {
-        // App Kit Integration
-        const result = await kit.send({
-          from: { adapter, chain: 'Arc_Testnet' },
-          to: recipient,
-          amount: amount,
-          token: tokenKey, 
-          config: {
-            kitKey: import.meta.env.VITE_KIT_KEY || '',
-          }
-        } as any); // Type cast due to varying signature docs
-        setTxHash(result.txHash ?? null);
-        setTxStatus('success');
-        logAction('Send Token (AppKit)', address, `Sent ${amount} ${tokenKey} to ${recipient.slice(0,8)}...`);
-      } else {
+        try {
+          // App Kit Integration
+          const result = await kit.send({
+            from: { adapter, chain: 'Arc_Testnet' },
+            to: recipient,
+            amount: amount,
+            token: tokenKey, 
+            config: {
+              kitKey: import.meta.env.VITE_KIT_KEY || '',
+            }
+          } as any); // Type cast due to varying signature docs
+          hash = result.txHash ?? null;
+          if (hash) usedAppKit = true;
+        } catch (kitError: any) {
+          console.warn("AppKit send failed, falling back to viem:", kitError);
+        }
+      }
+
+      if (!hash) {
         // Fallback to viem
         const publicClient = createPublicClient({ 
           chain: ARC_TESTNET_CONFIG,
@@ -90,13 +98,13 @@ export function SendCard({ address, adapter }: SendCardProps) {
           args: [tokenAddress as `0x${string}`, recipient as `0x${string}`, parsedAmount],
           account: address as `0x${string}`,
         });
-        const sendHash = await walletClient.writeContract(sendReq as any);
-        await publicClient.waitForTransactionReceipt({ hash: sendHash });
-
-        setTxHash(sendHash);
-        setTxStatus('success');
-        logAction('Send Token (Viem)', address, `Sent ${amount} ${tokenKey} to ${recipient.slice(0,8)}...`);
+        hash = await walletClient.writeContract(sendReq as any);
+        await publicClient.waitForTransactionReceipt({ hash });
       }
+
+      setTxHash(hash);
+      setTxStatus('success');
+      logAction(`Send Token (${usedAppKit ? 'AppKit' : 'Viem'})`, address, `Sent ${amount} ${tokenKey} to ${recipient.slice(0,8)}... TxHash: ${hash}`);
 
     } catch (error: any) {
       setErrorMessage(error.shortMessage || error.message || 'Gönderim başarısız.');

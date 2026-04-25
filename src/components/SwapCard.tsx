@@ -51,22 +51,28 @@ export function SwapCard({ address, adapter }: SwapCardProps) {
     setTxHash(null);
 
     try {
+      let hash = null;
+      let usedAppKit = false;
+
       if (adapter) {
-        // App Kit Integration
-        const result = await kit.swap({
-          from: { adapter, chain: 'Arc_Testnet' },
-          tokenIn: tokenIn,
-          tokenOut: tokenOut,
-          amountIn: amountIn,
-          config: {
-            kitKey: import.meta.env.VITE_KIT_KEY || '',
-          }
-        });
-        setTxHash(result.txHash);
-        setTxStatus('success');
-        logAction('Swap Tokens (AppKit)', address, `Swapped ${amountIn} ${tokenIn} → ${tokenOut}. TxHash: ${result.txHash}`);
-      } else {
-        // Fallback to viem direct (e.g. if adapter failed due to iframe)
+        try {
+          const result = await kit.swap({
+            from: { adapter, chain: 'Arc_Testnet' },
+            tokenIn: tokenIn,
+            tokenOut: tokenOut,
+            amountIn: amountIn,
+            config: {
+              kitKey: import.meta.env.VITE_KIT_KEY || '',
+            }
+          });
+          hash = result.txHash;
+          usedAppKit = true;
+        } catch (kitError: any) {
+          console.warn("AppKit swap failed, falling back to Viem:", kitError);
+        }
+      }
+
+      if (!hash) {
         const publicClient = createPublicClient({ 
           chain: ARC_TESTNET_CONFIG,
           transport: http('https://rpc.testnet.arc.network') 
@@ -99,13 +105,13 @@ export function SwapCard({ address, adapter }: SwapCardProps) {
           args: [addressIn as `0x${string}`, addressOut as `0x${string}`, parsedAmount, minAmountOut],
           account: address as `0x${string}`,
         });
-        const hash = await walletClient.writeContract(swapReq as any);
+        hash = await walletClient.writeContract(swapReq as any);
         await publicClient.waitForTransactionReceipt({ hash });
-
-        setTxHash(hash);
-        setTxStatus('success');
-        logAction('Swap Tokens (Viem)', address, `Swapped ${amountIn} ${tokenIn} → ${tokenOut}. TxHash: ${hash}`);
       }
+
+      setTxHash(hash);
+      setTxStatus('success');
+      logAction(`Swap Tokens (${usedAppKit ? 'AppKit' : 'Viem'})`, address, `Swapped ${amountIn} ${tokenIn} → ${tokenOut}. TxHash: ${hash}`);
 
     } catch (error: any) {
       setErrorMessage(error.shortMessage || error.message || 'Swap başarısız.');
