@@ -139,6 +139,22 @@ export function GMCard({ address }: GMCardProps) {
         lastGMTime: currentTime
       }));
 
+      // Call Backend API to Process Circle Reward
+      try {
+        const rewardRes = await fetch('/api/circle/reward', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address, streak: newStreak })
+        });
+        const rewardData = await rewardRes.json();
+        if (rewardData.success) {
+          console.log(rewardData.message);
+          // Optional: Display success message from backend if desired
+        }
+      } catch (err) {
+        console.error("Failed to fetch reward:", err);
+      }
+
     } catch (error: any) {
       console.error('GM Tx failed:', error);
       setErrorMessage(error.shortMessage || error.message || 'Transaction failed.');
