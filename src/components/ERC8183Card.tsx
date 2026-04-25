@@ -62,8 +62,8 @@ export function ERC8183Card({ address }: ERC8183Props) {
       const arcTestnet = {
         id: 5042002,
         name: 'Arc Testnet',
-        nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-        rpcUrls: { default: { http: ['https://testnet.arcscan.app'] } }
+        nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+        rpcUrls: { default: { http: ['https://rpc.testnet.arc.network'] } }
       } as const;
 
       // Request wallet to switch to Arc Testnet
@@ -81,10 +81,10 @@ export function ERC8183Card({ address }: ERC8183Props) {
                 {
                   chainId: '0x4cef52',
                   chainName: 'Arc Testnet',
-                  rpcUrls: ['https://testnet.arcscan.app'],
+                  rpcUrls: ['https://rpc.testnet.arc.network'],
                   nativeCurrency: {
-                    name: 'ETH',
-                    symbol: 'ETH',
+                    name: 'USDC',
+                    symbol: 'USDC',
                     decimals: 18
                   },
                   blockExplorerUrls: ['https://testnet.arcscan.app']
