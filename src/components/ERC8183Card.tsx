@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, AlertCircle, CheckCircle2, Loader2, Briefcase, History, X } from 'lucide-react';
-import { createWalletClient, createPublicClient, custom, parseAbi, parseUnits } from 'viem';
+import { createWalletClient, createPublicClient, custom, parseAbi, parseUnits, http } from 'viem';
 import { useLogs } from '../context/LogContext';
 
 interface ERC8183Props {
@@ -103,7 +103,7 @@ export function ERC8183Card({ address }: ERC8183Props) {
 
       const publicClient = createPublicClient({ 
         chain: arcTestnet,
-        transport: custom(window.ethereum as any) 
+        transport: http('https://rpc.testnet.arc.network') 
       });
       const walletClient = createWalletClient({ 
         chain: arcTestnet,

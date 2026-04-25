@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { createPublicClient, custom, formatUnits } from 'viem';
+import { createPublicClient, custom, formatUnits, http } from 'viem';
 import { RefreshCcw } from 'lucide-react';
 import { TOKENS, ERC20_ABI, ARC_TESTNET_CONFIG } from '../lib/contracts';
 
@@ -20,7 +20,7 @@ export function BalanceWidget({ address }: BalanceWidgetProps) {
     try {
       const publicClient = createPublicClient({
         chain: ARC_TESTNET_CONFIG,
-        transport: custom(window.ethereum as any)
+        transport: http('https://rpc.testnet.arc.network')
       });
       
       const newBals = { ...balances };

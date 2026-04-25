@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, AlertCircle, CheckCircle2, Loader2, ArrowDownUp } from 'lucide-react';
-import { createWalletClient, createPublicClient, custom, parseUnits } from 'viem';
+import { createWalletClient, createPublicClient, custom, parseUnits, http } from 'viem';
 import { TOKENS, ERC20_ABI, SWAP_ABI, SWAP_CONTRACT, ARC_TESTNET_CONFIG } from '../lib/contracts';
 import { useLogs } from '../context/LogContext';
 
@@ -63,7 +63,7 @@ export function SwapCard({ address }: SwapCardProps) {
       });
       const publicClient = createPublicClient({
         chain: ARC_TESTNET_CONFIG,
-        transport: custom(window.ethereum as any)
+        transport: http('https://rpc.testnet.arc.network')
       });
 
       const dec = 6; 
@@ -72,7 +72,7 @@ export function SwapCard({ address }: SwapCardProps) {
       const addressOut = TOKENS[tokenOut];
 
       // Step 1: Approve Swap Contract
-      const approveHash = await walletClient.writeContract({
+      const { request: approveReq } = await publicClient.simulateContract({
         address: addressIn as `0x${string}`,
         abi: ERC20_ABI as any,
         functionName: 'approve',
@@ -82,10 +82,11 @@ export function SwapCard({ address }: SwapCardProps) {
         maxFeePerGas: 1000000000n,
         maxPriorityFeePerGas: 1000000000n,
       });
+      const approveHash = await walletClient.writeContract(approveReq as any);
       await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
       // Step 2: Swap Execution
-      const swapHash = await walletClient.writeContract({
+      const { request: swapReq } = await publicClient.simulateContract({
         address: SWAP_CONTRACT as `0x${string}`,
         abi: SWAP_ABI as any,
         functionName: 'swap',
@@ -95,6 +96,7 @@ export function SwapCard({ address }: SwapCardProps) {
         maxFeePerGas: 1000000000n,
         maxPriorityFeePerGas: 1000000000n,
       });
+      const swapHash = await walletClient.writeContract(swapReq as any);
       
       setTxHash(swapHash);
       const receipt = await publicClient.waitForTransactionReceipt({ hash: swapHash });

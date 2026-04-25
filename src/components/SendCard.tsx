@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, AlertCircle, CheckCircle2, Loader2, Send, ArrowDown } from 'lucide-react';
-import { createWalletClient, createPublicClient, custom, parseUnits } from 'viem';
+import { createWalletClient, createPublicClient, custom, parseUnits, http } from 'viem';
 import { TOKENS, ERC20_ABI, SWAP_ABI, SWAP_CONTRACT, ARC_TESTNET_CONFIG } from '../lib/contracts';
 import { useLogs } from '../context/LogContext';
 
@@ -72,7 +72,7 @@ export function SendCard({ address }: SendCardProps) {
 
       const publicClient = createPublicClient({
         chain: ARC_TESTNET_CONFIG,
-        transport: custom(window.ethereum as any)
+        transport: http('https://rpc.testnet.arc.network')
       });
 
       // We assume 6 decimals for USDC and EURC on Testnet by default, but you might want to fetch dynamically
@@ -81,7 +81,7 @@ export function SendCard({ address }: SendCardProps) {
       const tokenAddress = TOKENS[tokenKey];
 
       // Step 1: Approve the Contract
-      const approveHash = await walletClient.writeContract({
+      const { request: approveReq } = await publicClient.simulateContract({
         address: tokenAddress as `0x${string}`,
         abi: ERC20_ABI as any,
         functionName: 'approve',
@@ -91,10 +91,11 @@ export function SendCard({ address }: SendCardProps) {
         maxFeePerGas: 1000000000n,
         maxPriorityFeePerGas: 1000000000n,
       });
+      const approveHash = await walletClient.writeContract(approveReq as any);
       await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
       // Step 2: Call the Send function on the Contract
-      const hash = await walletClient.writeContract({
+      const { request: sendReq } = await publicClient.simulateContract({
         address: SWAP_CONTRACT as `0x${string}`,
         abi: SWAP_ABI as any,
         functionName: 'send',
@@ -104,6 +105,7 @@ export function SendCard({ address }: SendCardProps) {
         maxFeePerGas: 1000000000n,
         maxPriorityFeePerGas: 1000000000n,
       });
+      const hash = await walletClient.writeContract(sendReq as any);
 
       setTxHash(hash);
       

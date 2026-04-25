@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2, AlertCircle, SunMedium, Flame } from 'lucide-react';
-import { createWalletClient, createPublicClient, custom } from 'viem';
+import { createWalletClient, createPublicClient, custom, http } from 'viem';
 import { useLogs } from '../context/LogContext';
 
 interface GMCardProps {
@@ -96,7 +96,7 @@ export function GMCard({ address }: GMCardProps) {
 
       const publicClient = createPublicClient({ 
         chain: arcTestnet,
-        transport: custom(window.ethereum as any) 
+        transport: http('https://rpc.testnet.arc.network') 
       });
       const walletClient = createWalletClient({ 
         chain: arcTestnet,
@@ -117,16 +117,17 @@ export function GMCard({ address }: GMCardProps) {
         }
       ] as const;
 
-      const hash = await walletClient.writeContract({
+      const { request } = await publicClient.simulateContract({
         address: GM_CONTRACT,
         abi: GM_ABI,
         functionName: 'gm',
         account,
         chain: arcTestnet,
-        // Manual gas overrides to prevent eth_gasPrice RPC failures on unstable testnets
-        maxFeePerGas: 1000000000n, // 1 gwei
-        maxPriorityFeePerGas: 1000000000n, // 1 gwei
+        maxFeePerGas: 1000000000n,
+        maxPriorityFeePerGas: 1000000000n,
       });
+
+      const hash = await walletClient.writeContract(request as any);
 
       await publicClient.waitForTransactionReceipt({ hash });
 

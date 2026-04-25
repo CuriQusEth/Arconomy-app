@@ -42,7 +42,7 @@ export const ERC20_ABI = [
   }
 ] as const;
 
-export const SWAP_CONTRACT = "0x53c8e32a6C66E4AB1dCcdF2d7a3051783E011F1d";
+export const SWAP_CONTRACT = "0x11C2B58d5cE395c9C9dADe8690295E17B192bd87";
 
 export const SWAP_ABI = [
   {
