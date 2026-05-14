@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, AlertCircle, CheckCircle2, Loader2, Briefcase, History, X, Sparkles } from 'lucide-react';
+import { Settings, AlertCircle, CheckCircle2, Loader2, Briefcase, History, X, Sparkles, LayoutDashboard, ChevronRight } from 'lucide-react';
 import { createWalletClient, createPublicClient, custom, parseAbi, parseUnits, http, toHex, keccak256 } from 'viem';
 import { ARC_TESTNET_CONFIG, AGENT_WALLET } from '../lib/contracts';
 import { useLogs } from '../context/LogContext';
@@ -18,8 +18,19 @@ interface TxHistory {
   jobId?: string;
 }
 
+interface JobRecord {
+  jobId: string;
+  desc: string;
+  amount: string;
+  status: 'CREATED' | 'BUDGET_SET' | 'FUNDED' | 'SUBMITTED' | 'COMPLETED';
+  date: string;
+  txHash: string;
+}
+
 export function ERC8183Card({ address }: ERC8183Props) {
   const { logAction } = useLogs();
+  const [viewMode, setViewMode] = useState<'actions' | 'dashboard'>('actions');
+  
   const [action, setAction] = useState('create');
   const [jobId, setJobId] = useState('1');
   const [providerAddr, setProviderAddr] = useState(AGENT_WALLET);
@@ -53,18 +64,28 @@ export function ERC8183Card({ address }: ERC8183Props) {
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [txHistory, setTxHistory] = useState<TxHistory[]>([]);
+  const [myJobs, setMyJobs] = useState<JobRecord[]>([]);
 
-  // Load history from local storage on mount
+  // Load history & jobs from local storage on mount
   useEffect(() => {
     const saved = localStorage.getItem('arconomy_history');
     if (saved) {
       try { setTxHistory(JSON.parse(saved)); } catch (e) {}
+    }
+    const savedJobs = localStorage.getItem('arconomy_jobs');
+    if (savedJobs) {
+      try { setMyJobs(JSON.parse(savedJobs)); } catch (e) {}
     }
   }, []);
 
   const saveHistory = (newHistory: TxHistory[]) => {
     setTxHistory(newHistory);
     localStorage.setItem('arconomy_history', JSON.stringify(newHistory));
+  };
+
+  const saveJobs = (jobs: JobRecord[]) => {
+    setMyJobs(jobs);
+    localStorage.setItem('arconomy_jobs', JSON.stringify(jobs));
   };
 
   const executeTx = async () => {
@@ -234,6 +255,8 @@ export function ERC8183Card({ address }: ERC8183Props) {
          setTxHash(finalHash);
          setTxStatus('success');
          
+         const resolvedJobId = action === 'create' ? Math.floor(Math.random() * 10000).toString() : jobId;
+         
          // Format action name for history
          let actionName = 'Unknown Action';
          if (action === 'create') actionName = 'Job Created';
@@ -246,10 +269,42 @@ export function ERC8183Card({ address }: ERC8183Props) {
            action: actionName,
            hash: finalHash,
            time: new Date().toLocaleString(),
-           jobId: (action !== 'create') ? jobId : undefined
+           jobId: resolvedJobId
          };
 
          saveHistory([newRecord, ...txHistory]);
+         
+         // Update My Jobs
+         let updatedJobs = [...myJobs];
+         if (action === 'create') {
+           updatedJobs.unshift({
+             jobId: resolvedJobId,
+             desc: desc,
+             amount: amount,
+             status: 'CREATED',
+             date: new Date().toLocaleString(),
+             txHash: finalHash
+           });
+           setJobId(resolvedJobId); // Auto-update to the new job ID
+         } else {
+           const jobIndex = updatedJobs.findIndex(j => j.jobId === resolvedJobId);
+           if (jobIndex >= 0) {
+             if (action === 'budget') updatedJobs[jobIndex].status = 'BUDGET_SET';
+             if (action === 'fund') updatedJobs[jobIndex].status = 'FUNDED';
+             if (action === 'submit') updatedJobs[jobIndex].status = 'SUBMITTED';
+             if (action === 'complete') updatedJobs[jobIndex].status = 'COMPLETED';
+           } else {
+             updatedJobs.unshift({
+               jobId: resolvedJobId,
+               desc: 'Unknown External Job',
+               amount: amount,
+               status: action === 'budget' ? 'BUDGET_SET' : action === 'fund' ? 'FUNDED' : action === 'submit' ? 'SUBMITTED' : 'COMPLETED',
+               date: new Date().toLocaleString(),
+               txHash: finalHash
+             });
+           }
+         }
+         saveJobs(updatedJobs);
          
          logAction(`Job Action: ${actionName}`, address, `Executed ${action} flow. TxHash: ${finalHash}`);
       }
@@ -334,7 +389,7 @@ export function ERC8183Card({ address }: ERC8183Props) {
   return (
     <>
       <div className="bg-card w-full max-w-[480px] p-4 rounded-[24px] border border-border shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-4">
           <div className="flex flex-col">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Briefcase size={22} className="text-[#3d6eff]" />
@@ -352,9 +407,26 @@ export function ERC8183Card({ address }: ERC8183Props) {
           </div>
         </div>
 
-        <div className="space-y-4">
-          
-          {/* Action Selector */}
+        <div className="flex gap-2 p-1 bg-input rounded-xl mb-6">
+          <button
+            onClick={() => setViewMode('actions')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-colors ${viewMode === 'actions' ? 'bg-card shadow-sm text-white' : 'text-text-secondary hover:text-white'}`}
+          >
+            Create & Manage
+          </button>
+          <button
+            onClick={() => setViewMode('dashboard')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-colors ${viewMode === 'dashboard' ? 'bg-card shadow-sm text-white' : 'text-text-secondary hover:text-white'}`}
+          >
+            <LayoutDashboard size={16} /> My Jobs
+          </button>
+        </div>
+
+        {viewMode === 'actions' ? (
+          <>
+            <div className="space-y-4">
+              
+              {/* Action Selector */}
           <div className="bg-input rounded-2xl border border-transparent hover:border-border transition-colors">
             <select
               value={action}
@@ -473,6 +545,73 @@ export function ERC8183Card({ address }: ERC8183Props) {
         >
           {!address ? 'Connect Wallet' : isProcessing ? 'Executing...' : 'Execute ERC-8183 Action'}
         </button>
+      </>
+      ) : (
+        <div className="space-y-3">
+          {myJobs.length === 0 ? (
+            <div className="text-center py-10 bg-input rounded-2xl flex flex-col items-center">
+              <Briefcase size={32} className="text-text-secondary mb-3 opacity-50" />
+              <p className="text-sm font-medium text-text-secondary">No AI jobs found</p>
+              <button onClick={() => { setViewMode('actions'); setAction('create'); }} className="mt-3 px-4 py-2 bg-[#3d6eff]/10 hover:bg-[#3d6eff]/20 rounded-lg text-xs font-semibold text-[#3d6eff] transition-colors">
+                Create your first job
+              </button>
+            </div>
+          ) : (
+            <div className="max-h-[400px] overflow-y-auto pr-1 space-y-3 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+              {myJobs.map((job, idx) => (
+                <div key={idx} className="bg-input rounded-xl p-4 flex flex-col gap-2 group hover:bg-input/80 transition-colors border border-transparent hover:border-border">
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-text-secondary uppercase tracking-wider font-bold mb-1">
+                        Job #{job.jobId}
+                      </span>
+                      <h4 className="text-sm font-semibold text-white line-clamp-1">{job.desc}</h4>
+                    </div>
+                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold whitespace-nowrap ${
+                      job.status === 'COMPLETED' ? 'bg-success/20 text-success' :
+                      job.status === 'CREATED' ? 'bg-[#3d6eff]/20 text-[#3d6eff]' :
+                      'bg-[#f1c40f]/20 text-[#f1c40f]'
+                    }`}>
+                      {job.status}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-end mt-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-mono font-bold text-white bg-card px-2 py-1 rounded-md border border-border">
+                        {job.amount} USDC
+                      </span>
+                      {job.txHash && !job.txHash.includes('simulated') && (
+                        <a href={`https://testnet.arcscan.app/tx/${job.txHash}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-text-secondary hover:text-[#3d6eff] underline">
+                          Tx Hash
+                        </a>
+                      )}
+                    </div>
+                    
+                    {job.status !== 'COMPLETED' && (
+                      <button 
+                        title="Manage Job"
+                        onClick={() => {
+                          setJobId(job.jobId);
+                          setAmount(job.amount);
+                          if (job.status === 'CREATED') setAction('budget');
+                          else if (job.status === 'BUDGET_SET') setAction('fund');
+                          else if (job.status === 'FUNDED') setAction('submit');
+                          else if (job.status === 'SUBMITTED') setAction('complete');
+                          setViewMode('actions');
+                        }}
+                        className="flex items-center gap-1 text-[11px] text-[#3d6eff] font-bold hover:underline bg-[#3d6eff]/10 px-2 py-1.5 rounded-md"
+                      >
+                        Next Step <ChevronRight size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       </div>
 
       {/* Transaction Status Overlay */}

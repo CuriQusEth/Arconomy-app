@@ -12,7 +12,8 @@ interface SendCardProps {
 
 const TOKEN_KEYS = Object.keys(TOKENS) as Array<keyof typeof TOKENS>;
 
-const kit = new AppKit();
+const RAW_API_KEY = import.meta.env.VITE_KIT_KEY || '1d4e45e2423fd9cd4c0312acb0f0b91d:db6cbae552a5d87b3abb79514ef4a4c5';
+const kit = new AppKit({ apiKey: RAW_API_KEY } as any);
 
 export function SendCard({ address, adapter }: SendCardProps) {
   const { logAction } = useLogs();

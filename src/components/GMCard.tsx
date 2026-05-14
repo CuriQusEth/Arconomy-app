@@ -30,7 +30,7 @@ export function GMCard({ address }: GMCardProps) {
         abi: CORE_ABI as any,
         functionName: 'getGMProfile',
         args: [address as `0x${string}`]
-      }).then((result: any) => {
+      } as any).then((result: any) => {
         const lastGM = Number(result[0]) * 1000; // block.timestamp is in seconds
         const streak = Number(result[1]);
         setStreak(streak);
