@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, AlertCircle, CheckCircle2, Loader2, Send, ArrowDown, X } from 'lucide-react';
-import { TOKENS, CORE_ABI, CORE_CONTRACT, ARC_TESTNET_CONFIG, ERC20_ABI } from '../lib/contracts';
+import { TOKENS, CORE_ABI, CORE_CONTRACT, ARC_TESTNET_CONFIG, ERC20_ABI, AGENT_WALLET } from '../lib/contracts';
 import { useLogs } from '../context/LogContext';
 import { createWalletClient, createPublicClient, custom, http, parseUnits } from 'viem';
 import { AppKit } from '@circle-fin/app-kit';
@@ -141,7 +141,15 @@ export function SendCard({ address, adapter }: SendCardProps) {
 
           {/* Recipient Address */}
           <div className="bg-input rounded-2xl p-4 border border-transparent focus-within:border-[#3d6eff] transition-colors relative z-0">
-             <div className="text-xs text-text-secondary mb-2">To Recipient Address</div>
+             <div className="flex justify-between items-center mb-2">
+               <div className="text-xs text-text-secondary">To Recipient Address</div>
+               <button 
+                 onClick={() => setRecipient(AGENT_WALLET)}
+                 className="text-[10px] text-[#3d6eff] font-bold hover:underline bg-[#3d6eff]/10 px-2 py-0.5 rounded-full"
+               >
+                 Paste AI Agent Wallet
+               </button>
+             </div>
              <input
                type="text"
                placeholder="0x..."

@@ -44,6 +44,8 @@ export const ERC20_ABI = [
 
 export const CORE_CONTRACT = "0x1a5A130DE2CaD639f79196794221a5981018A9Df";
 
+export const AGENT_WALLET = "0xacf54b0b4341535af0fb8d09559bafdcd8159264";
+
 export const CORE_ABI = [
   {
     "inputs": [

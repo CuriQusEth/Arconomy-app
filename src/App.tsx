@@ -3,6 +3,7 @@ import { SendCard } from './components/SendCard';
 import { SwapCard } from './components/SwapCard';
 import { ERC8183Card } from './components/ERC8183Card';
 import { GMCard } from './components/GMCard';
+import { AgentCard } from './components/AgentCard';
 import { WalletButton } from './components/WalletButton';
 import { BalanceWidget } from './components/BalanceWidget';
 import { ApiLogsModal } from './components/ApiLogsModal';
@@ -15,7 +16,7 @@ const isIframe = window !== window.parent;
 
 function AppContent() {
   const { address, adapter, isConnecting, connect, disconnect } = useWallet();
-  const [activeTab, setActiveTab] = useState<'gm' | 'jobs' | 'swap' | 'send'>('gm');
+  const [activeTab, setActiveTab] = useState<'gm' | 'jobs' | 'swap' | 'send' | 'agent'>('gm');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -91,12 +92,19 @@ function AppContent() {
           >
             Send
           </button>
+          <button 
+            onClick={() => setActiveTab('agent')}
+            className={`px-4 py-2 text-sm font-semibold whitespace-nowrap rounded-full transition-all flex items-center gap-1 ${activeTab === 'agent' ? 'bg-purple-600 text-white shadow-sm' : 'text-purple-400/70 hover:text-purple-400'}`}
+          >
+            Agent
+          </button>
         </div>
 
         {activeTab === 'gm' && <GMCard address={address} />}
         {activeTab === 'jobs' && <ERC8183Card address={address} />}
         {activeTab === 'swap' && <SwapCard address={address} adapter={adapter} />}
         {activeTab === 'send' && <SendCard address={address} adapter={adapter} />}
+        {activeTab === 'agent' && <AgentCard />}
         
         <div className="absolute bottom-5 left-5 text-xs text-text-secondary flex items-center gap-1.5 hidden md:flex">
           <div className="w-1.5 h-1.5 bg-[#f1c40f] rounded-full animate-pulse"></div>

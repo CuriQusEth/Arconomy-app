@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, AlertCircle, CheckCircle2, Loader2, Briefcase, History, X } from 'lucide-react';
 import { createWalletClient, createPublicClient, custom, parseAbi, parseUnits, http } from 'viem';
-import { ARC_TESTNET_CONFIG } from '../lib/contracts';
+import { ARC_TESTNET_CONFIG, AGENT_WALLET } from '../lib/contracts';
 import { useLogs } from '../context/LogContext';
 
 interface ERC8183Props {
@@ -22,7 +22,7 @@ export function ERC8183Card({ address }: ERC8183Props) {
   const { logAction } = useLogs();
   const [action, setAction] = useState('create');
   const [jobId, setJobId] = useState('1');
-  const [providerAddr, setProviderAddr] = useState('');
+  const [providerAddr, setProviderAddr] = useState(AGENT_WALLET);
   const [evaluatorAddr, setEvaluatorAddr] = useState('');
   const [amount, setAmount] = useState('5.0');
   const [desc, setDesc] = useState('Review a market brief on stablecoin payments in Asia.');
@@ -329,7 +329,10 @@ export function ERC8183Card({ address }: ERC8183Props) {
           {(action === 'create') && (
             <>
               <div className="space-y-1">
-                <label className="text-xs text-text-secondary px-1">Provider Address (Agent)</label>
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-xs text-text-secondary">Provider Address (Agent)</label>
+                  {providerAddr === AGENT_WALLET && <span className="text-[10px] text-[#3d6eff] font-bold">Auto-assigned</span>}
+                </div>
                 <input type="text" placeholder="0x..." value={providerAddr} onChange={e => setProviderAddr(e.target.value)} className="w-full bg-input rounded-xl p-3 text-sm outline-none font-mono" />
               </div>
               <div className="space-y-1">
