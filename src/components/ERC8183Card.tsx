@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, AlertCircle, CheckCircle2, Loader2, Briefcase, History, X } from 'lucide-react';
-import { createWalletClient, createPublicClient, custom, parseAbi, parseUnits, http } from 'viem';
+import { Settings, AlertCircle, CheckCircle2, Loader2, Briefcase, History, X, Sparkles } from 'lucide-react';
+import { createWalletClient, createPublicClient, custom, parseAbi, parseUnits, http, toHex, keccak256 } from 'viem';
 import { ARC_TESTNET_CONFIG, AGENT_WALLET } from '../lib/contracts';
 import { useLogs } from '../context/LogContext';
 
@@ -27,6 +27,23 @@ export function ERC8183Card({ address }: ERC8183Props) {
   const [amount, setAmount] = useState('5.0');
   const [desc, setDesc] = useState('Review a market brief on stablecoin payments in Asia.');
   const [hashValue, setHashValue] = useState('0x56f2c5a6adee8c37f3d40bd77c97a5e2395569d45ed60f9cb8a2f9a1ef39ecb1');
+  const [useTextForHash, setUseTextForHash] = useState(true);
+  const [textForHash, setTextForHash] = useState('Analysis successfully completed. No critical vulnerabilities found in the dataset.');
+
+  const JOB_TEMPLATES = [
+    { name: 'Market Brief Review', desc: 'Review a market brief on stablecoin payments in Asia.', amount: '5.0' },
+    { name: 'Data Pipeline Analysis', desc: 'Process and analyze DEX volume data for the last 30 days', amount: '15.0' },
+    { name: 'Smart Contract Audit', desc: 'Perform static analysis and audit of ERC20 token contract', amount: '50.0' },
+  ];
+
+  const getComputedHash = () => {
+    if (!useTextForHash) return hashValue;
+    try {
+      return keccak256(toHex(textForHash));
+    } catch {
+      return '0x0000000000000000000000000000000000000000000000000000000000000000';
+    }
+  };
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
@@ -166,7 +183,7 @@ export function ERC8183Card({ address }: ERC8183Props) {
           address: ERC8183_ADDRESS,
           abi,
           functionName: 'submit',
-          args: [BigInt(jobId), hashValue as `0x${string}`, '0x'],
+          args: [BigInt(jobId), getComputedHash() as `0x${string}`, '0x'],
           account,
           chain: ARC_TESTNET_CONFIG,
         });
@@ -177,7 +194,7 @@ export function ERC8183Card({ address }: ERC8183Props) {
           address: ERC8183_ADDRESS,
           abi,
           functionName: 'complete',
-          args: [BigInt(jobId), hashValue as `0x${string}`, '0x'],
+          args: [BigInt(jobId), getComputedHash() as `0x${string}`, '0x'],
           account,
           chain: ARC_TESTNET_CONFIG,
         });
@@ -328,6 +345,23 @@ export function ERC8183Card({ address }: ERC8183Props) {
           
           {(action === 'create') && (
             <>
+              <div className="mb-4">
+                <label className="text-xs text-text-secondary px-1 flex items-center gap-1 mb-2">
+                  <Sparkles size={12} className="text-[#f1c40f]" /> AI Job Templates
+                </label>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                  {JOB_TEMPLATES.map(t => (
+                    <button
+                      key={t.name}
+                      onClick={() => { setDesc(t.desc); setAmount(t.amount); }}
+                      className="whitespace-nowrap px-3 py-1.5 bg-[#3d6eff]/10 hover:bg-[#3d6eff]/20 border border-[#3d6eff]/20 rounded-lg text-xs font-medium text-[#3d6eff] transition-colors"
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <div className="flex justify-between items-center px-1">
                   <label className="text-xs text-text-secondary">Provider Address (Agent)</label>
@@ -336,7 +370,10 @@ export function ERC8183Card({ address }: ERC8183Props) {
                 <input type="text" placeholder="0x..." value={providerAddr} onChange={e => setProviderAddr(e.target.value)} className="w-full bg-input rounded-xl p-3 text-sm outline-none font-mono" />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-text-secondary px-1">Evaluator Address</label>
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-xs text-text-secondary">Evaluator Address</label>
+                  <button onClick={() => setEvaluatorAddr(AGENT_WALLET)} className="text-[10px] text-[#3d6eff] font-bold hover:underline bg-[#3d6eff]/10 px-2 py-0.5 rounded-full">Use AI Agent</button>
+                </div>
                 <input type="text" placeholder="0x..." value={evaluatorAddr} onChange={e => setEvaluatorAddr(e.target.value)} className="w-full bg-input rounded-xl p-3 text-sm outline-none font-mono" />
               </div>
               <div className="space-y-1">
@@ -362,9 +399,33 @@ export function ERC8183Card({ address }: ERC8183Props) {
           )}
 
           {(action === 'submit' || action === 'complete') && (
-            <div className="space-y-1 mt-2">
-              <label className="text-xs text-text-secondary px-1">Hash Data (Deliverable / Reason)</label>
-              <input type="text" value={hashValue} onChange={e => setHashValue(e.target.value)} className="w-full bg-input rounded-xl p-3 text-sm outline-none font-mono text-[11px]" />
+            <div className="space-y-2 mt-2">
+              <div className="flex justify-between items-center px-1">
+                <label className="text-xs text-text-secondary">Deliverable Data (Hashed onchain)</label>
+                <button 
+                  onClick={() => setUseTextForHash(!useTextForHash)}
+                  className="text-[10px] text-[#3d6eff] font-bold hover:underline bg-[#3d6eff]/10 px-2 py-0.5 rounded-full"
+                >
+                  {useTextForHash ? 'Use Raw Hex Hash' : 'Generate from Text'}
+                </button>
+              </div>
+              
+              {useTextForHash ? (
+                <div>
+                  <textarea 
+                    value={textForHash} 
+                    onChange={e => setTextForHash(e.target.value)} 
+                    className="w-full bg-input rounded-xl p-3 text-sm outline-none resize-none h-20"
+                    placeholder="Enter the analysis result or deliverable text here..."
+                  />
+                  <div className="text-[10px] text-text-secondary mt-1 px-1 break-all flex flex-col">
+                    <span>Generated Keccak256 Hash:</span>
+                    <span className="font-mono text-[#3d6eff]">{getComputedHash()}</span>
+                  </div>
+                </div>
+              ) : (
+                <input type="text" value={hashValue} onChange={e => setHashValue(e.target.value)} className="w-full bg-input rounded-xl p-3 text-sm outline-none font-mono text-[11px]" placeholder="0x..." />
+              )}
             </div>
           )}
           
