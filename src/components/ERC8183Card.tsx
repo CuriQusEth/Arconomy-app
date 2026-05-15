@@ -143,87 +143,119 @@ export function ERC8183Card({ address }: ERC8183Props) {
       });
       const account = address as `0x${string}`;
       let finalHash: `0x${string}` | null = null;
+      let createdJobId: string | null = null;
 
       if (action === 'create') {
         const abi = parseAbi(['function createJob(address provider, address evaluator, uint256 expiredAt, string description, address hook) returns (uint256)']);
-        finalHash = await walletClient.writeContract({
-          address: ERC8183_ADDRESS,
-          abi,
-          functionName: 'createJob',
-          args: [
-            (providerAddr || address) as `0x${string}`, 
-            (evaluatorAddr || address) as `0x${string}`, 
-            BigInt(Math.floor(Date.now() / 1000) + 3600), // expire in 1 hour
-            desc, 
-            '0x0000000000000000000000000000000000000000'
-          ],
-          account,
-          chain: ARC_TESTNET_CONFIG as any,
-        } as any);
+        try {
+          const { request, result } = await publicClient.simulateContract({
+            address: ERC8183_ADDRESS,
+            abi,
+            functionName: 'createJob',
+            args: [
+              (providerAddr || address) as `0x${string}`, 
+              (evaluatorAddr || address) as `0x${string}`, 
+              BigInt(Math.floor(Date.now() / 1000) + 3600), // expire in 1 hour
+              desc, 
+              '0x0000000000000000000000000000000000000000'
+            ],
+            account,
+          });
+          createdJobId = result.toString();
+          finalHash = await walletClient.writeContract(request as any);
+          await publicClient.waitForTransactionReceipt({ hash: finalHash });
+        } catch (e: any) {
+          alert('Error during Create Job. Please check your inputs. Message: ' + e?.shortMessage);
+          throw e; // Break out
+        }
       } 
       else if (action === 'budget') {
         const abi = parseAbi(['function setBudget(uint256 jobId, uint256 amount, bytes optParams)']);
-        finalHash = await walletClient.writeContract({
-          address: ERC8183_ADDRESS,
-          abi,
-          functionName: 'setBudget',
-          args: [BigInt(jobId), parseUnits(amount, 6), '0x'],
-          account,
-          chain: ARC_TESTNET_CONFIG as any,
-        } as any);
+        try {
+          const { request } = await publicClient.simulateContract({
+            address: ERC8183_ADDRESS,
+            abi,
+            functionName: 'setBudget',
+            args: [BigInt(jobId), parseUnits(amount, 6), '0x'],
+            account,
+          });
+          finalHash = await walletClient.writeContract(request as any);
+          await publicClient.waitForTransactionReceipt({ hash: finalHash });
+        } catch (e: any) {
+          alert('Error during Set Budget. Please check your inputs. Message: ' + e?.shortMessage);
+          throw e;
+        }
       } 
       else if (action === 'fund') {
-        // USDC Approve 
-        const usdcAbi = parseAbi(['function approve(address spender, uint256 amount) returns (bool)']);
-        const approveHash = await walletClient.writeContract({
-          address: USDC_ADDRESS,
-          abi: usdcAbi,
-          functionName: 'approve',
-          args: [ERC8183_ADDRESS, parseUnits(amount, 6)],
-          account,
-          chain: ARC_TESTNET_CONFIG as any,
-        } as any);
-        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        try {
+          // USDC Approve 
+          const usdcAbi = parseAbi(['function approve(address spender, uint256 amount) returns (bool)']);
+          const { request: approveReq } = await publicClient.simulateContract({
+            address: USDC_ADDRESS,
+            abi: usdcAbi,
+            functionName: 'approve',
+            args: [ERC8183_ADDRESS, parseUnits(amount, 6)],
+            account,
+          });
+          const approveHash = await walletClient.writeContract(approveReq as any);
+          await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
-        // ERC8183 Fund
-        const abi = parseAbi(['function fund(uint256 jobId, bytes optParams)']);
-        finalHash = await walletClient.writeContract({
-          address: ERC8183_ADDRESS,
-          abi,
-          functionName: 'fund',
-          args: [BigInt(jobId), '0x'],
-          account,
-          chain: ARC_TESTNET_CONFIG as any,
-        } as any);
+          // ERC8183 Fund
+          const abi = parseAbi(['function fund(uint256 jobId, bytes optParams)']);
+          const { request: fundReq } = await publicClient.simulateContract({
+            address: ERC8183_ADDRESS,
+            abi,
+            functionName: 'fund',
+            args: [BigInt(jobId), '0x'],
+            account,
+          });
+          finalHash = await walletClient.writeContract(fundReq as any);
+          await publicClient.waitForTransactionReceipt({ hash: finalHash });
+        } catch (e: any) {
+          alert('Error during Fund. Please check your inputs. Message: ' + e?.shortMessage);
+          throw e;
+        }
       } 
       else if (action === 'submit') {
         const abi = parseAbi(['function submit(uint256 jobId, bytes32 deliverable, bytes optParams)']);
-        finalHash = await walletClient.writeContract({
-          address: ERC8183_ADDRESS,
-          abi,
-          functionName: 'submit',
-          args: [BigInt(jobId), getComputedHash() as `0x${string}`, '0x'],
-          account,
-          chain: ARC_TESTNET_CONFIG as any,
-        } as any);
+        try {
+          const { request } = await publicClient.simulateContract({
+            address: ERC8183_ADDRESS,
+            abi,
+            functionName: 'submit',
+            args: [BigInt(jobId), getComputedHash() as `0x${string}`, '0x'],
+            account,
+          });
+          finalHash = await walletClient.writeContract(request as any);
+          await publicClient.waitForTransactionReceipt({ hash: finalHash });
+        } catch (e: any) {
+          alert('Error during Submit. Please check your inputs. Message: ' + e?.shortMessage);
+          throw e;
+        }
       } 
       else if (action === 'complete') {
         const abi = parseAbi(['function complete(uint256 jobId, bytes32 reason, bytes optParams)']);
-        finalHash = await walletClient.writeContract({
-          address: ERC8183_ADDRESS,
-          abi,
-          functionName: 'complete',
-          args: [BigInt(jobId), getComputedHash() as `0x${string}`, '0x'],
-          account,
-          chain: ARC_TESTNET_CONFIG as any,
-        } as any);
+        try {
+           const { request } = await publicClient.simulateContract({
+            address: ERC8183_ADDRESS,
+            abi,
+            functionName: 'complete',
+            args: [BigInt(jobId), getComputedHash() as `0x${string}`, '0x'],
+            account,
+          });
+          finalHash = await walletClient.writeContract(request as any);
+          await publicClient.waitForTransactionReceipt({ hash: finalHash });
+        } catch (e: any) {
+          alert('Error during Complete Job. Please check your inputs. Message: ' + e?.shortMessage);
+          throw e;
+        }
       }
 
       if (finalHash) {
          setTxHash(finalHash);
          setTxStatus('success');
          
-         const resolvedJobId = action === 'create' ? Math.floor(Math.random() * 10000).toString() : jobId;
+         const resolvedJobId = action === 'create' ? (createdJobId || '0') : jobId;
          
          // Format action name for history
          let actionName = 'Unknown Action';
