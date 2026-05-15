@@ -33,7 +33,7 @@ export function ERC8183Card({ address }: ERC8183Props) {
   
   const [action, setAction] = useState('create');
   const [jobId, setJobId] = useState('1');
-  const [providerAddr, setProviderAddr] = useState(AGENT_WALLET);
+  const [providerAddr, setProviderAddr] = useState('');
   const [evaluatorAddr, setEvaluatorAddr] = useState('');
   const [amount, setAmount] = useState('5.0');
   const [desc, setDesc] = useState('Review a market brief on stablecoin payments in Asia.');
@@ -182,7 +182,11 @@ export function ERC8183Card({ address }: ERC8183Props) {
           finalHash = await walletClient.writeContract(request as any);
           await publicClient.waitForTransactionReceipt({ hash: finalHash });
         } catch (e: any) {
-          alert('Error during Set Budget. Please check your inputs. Message: ' + e?.shortMessage);
+          if (e?.shortMessage?.includes('0x82b42900')) {
+            alert('Unauthorized: The connected wallet is not the Provider for this job. Only the Provider can set the budget.');
+          } else {
+            alert('Error during Set Budget. Please check your inputs. Message: ' + e?.shortMessage);
+          }
           throw e;
         }
       } 
@@ -212,7 +216,11 @@ export function ERC8183Card({ address }: ERC8183Props) {
           finalHash = await walletClient.writeContract(fundReq as any);
           await publicClient.waitForTransactionReceipt({ hash: finalHash });
         } catch (e: any) {
-          alert('Error during Fund. Please check your inputs. Message: ' + e?.shortMessage);
+          if (e?.shortMessage?.includes('0x82b42900')) {
+            alert('Unauthorized: Only the Requester can fund this job.');
+          } else {
+            alert('Error during Fund. Please check your inputs. Message: ' + e?.shortMessage);
+          }
           throw e;
         }
       } 
@@ -229,7 +237,11 @@ export function ERC8183Card({ address }: ERC8183Props) {
           finalHash = await walletClient.writeContract(request as any);
           await publicClient.waitForTransactionReceipt({ hash: finalHash });
         } catch (e: any) {
-          alert('Error during Submit. Please check your inputs. Message: ' + e?.shortMessage);
+          if (e?.shortMessage?.includes('0x82b42900')) {
+            alert('Unauthorized: Only the Provider can submit work for this job.');
+          } else {
+            alert('Error during Submit. Please check your inputs. Message: ' + e?.shortMessage);
+          }
           throw e;
         }
       } 
@@ -246,7 +258,11 @@ export function ERC8183Card({ address }: ERC8183Props) {
           finalHash = await walletClient.writeContract(request as any);
           await publicClient.waitForTransactionReceipt({ hash: finalHash });
         } catch (e: any) {
-          alert('Error during Complete Job. Please check your inputs. Message: ' + e?.shortMessage);
+          if (e?.shortMessage?.includes('0x82b42900')) {
+            alert('Unauthorized: Only the Evaluator can complete this job.');
+          } else {
+            alert('Error during Complete Job. Please check your inputs. Message: ' + e?.shortMessage);
+          }
           throw e;
         }
       }
@@ -466,17 +482,23 @@ export function ERC8183Card({ address }: ERC8183Props) {
 
               <div className="space-y-1">
                 <div className="flex justify-between items-center px-1">
-                  <label className="text-xs text-text-secondary">Provider Address (Agent)</label>
-                  {providerAddr === AGENT_WALLET && <span className="text-[10px] text-[#3d6eff] font-bold">Auto-assigned</span>}
+                  <label className="text-xs text-text-secondary">Provider Address</label>
+                  <div className="flex gap-2">
+                    <button onClick={() => setProviderAddr('')} className="text-[10px] text-[#3d6eff] font-bold hover:underline bg-[#3d6eff]/10 px-2 py-0.5 rounded-full">Use My Wallet</button>
+                    <button onClick={() => setProviderAddr(AGENT_WALLET)} className="text-[10px] text-[#3d6eff] font-bold hover:underline bg-[#3d6eff]/10 px-2 py-0.5 rounded-full">Use AI Agent</button>
+                  </div>
                 </div>
-                <input type="text" placeholder="0x..." value={providerAddr} onChange={e => setProviderAddr(e.target.value)} className="w-full bg-input rounded-xl p-3 text-sm outline-none font-mono" />
+                <input type="text" placeholder={address || '0x...'} value={providerAddr} onChange={e => setProviderAddr(e.target.value)} className="w-full bg-input rounded-xl p-3 text-sm outline-none font-mono" />
               </div>
               <div className="space-y-1">
                 <div className="flex justify-between items-center px-1">
                   <label className="text-xs text-text-secondary">Evaluator Address</label>
-                  <button onClick={() => setEvaluatorAddr(AGENT_WALLET)} className="text-[10px] text-[#3d6eff] font-bold hover:underline bg-[#3d6eff]/10 px-2 py-0.5 rounded-full">Use AI Agent</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => setEvaluatorAddr('')} className="text-[10px] text-[#3d6eff] font-bold hover:underline bg-[#3d6eff]/10 px-2 py-0.5 rounded-full">Use My Wallet</button>
+                    <button onClick={() => setEvaluatorAddr(AGENT_WALLET)} className="text-[10px] text-[#3d6eff] font-bold hover:underline bg-[#3d6eff]/10 px-2 py-0.5 rounded-full">Use AI Agent</button>
+                  </div>
                 </div>
-                <input type="text" placeholder="0x..." value={evaluatorAddr} onChange={e => setEvaluatorAddr(e.target.value)} className="w-full bg-input rounded-xl p-3 text-sm outline-none font-mono" />
+                <input type="text" placeholder={address || '0x...'} value={evaluatorAddr} onChange={e => setEvaluatorAddr(e.target.value)} className="w-full bg-input rounded-xl p-3 text-sm outline-none font-mono" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-text-secondary px-1">Description</label>
