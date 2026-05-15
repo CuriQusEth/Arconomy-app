@@ -73,7 +73,7 @@ export function GMCard({ address }: GMCardProps) {
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x4cef52' }], // 5042002 in hex
+          params: [{ chainId: '0xd8' }], // 216 in hex
         });
       } catch (switchError: any) {
         if (switchError.code === 4902) {
@@ -82,10 +82,10 @@ export function GMCard({ address }: GMCardProps) {
               method: 'wallet_addEthereumChain',
               params: [
                 {
-                  chainId: '0x4cef52',
+                  chainId: '0xd8',
                   chainName: 'Arc Testnet',
                   rpcUrls: ['https://rpc.testnet.arc.network'],
-                  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+                  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 6 },
                   blockExplorerUrls: ['https://testnet.arcscan.app']
                 },
               ],

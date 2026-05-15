@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, AlertCircle, CheckCircle2, Loader2, Briefcase, History, X, Sparkles, LayoutDashboard, ChevronRight } from 'lucide-react';
 import { createWalletClient, createPublicClient, custom, parseAbi, parseUnits, http, toHex, keccak256 } from 'viem';
-import { ARC_TESTNET_CONFIG, AGENT_WALLET } from '../lib/contracts';
+import { ARC_TESTNET_CONFIG, AGENT_WALLET, TOKENS } from '../lib/contracts';
 import { useLogs } from '../context/LogContext';
 
 interface ERC8183Props {
@@ -9,7 +9,7 @@ interface ERC8183Props {
 }
 
 const ERC8183_ADDRESS = '0x0747EEf0706327138c69792bF28Cd525089e4583';
-const USDC_ADDRESS = '0x3600000000000000000000000000000000000000';
+const USDC_ADDRESS = TOKENS.USDC;
 
 interface TxHistory {
   action: string;
@@ -104,7 +104,7 @@ export function ERC8183Card({ address }: ERC8183Props) {
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x4cef52' }], // 5042002 in hex
+          params: [{ chainId: '0xd8' }], // 216 in hex
         });
       } catch (switchError: any) {
         if (switchError.code === 4902) {
@@ -113,13 +113,13 @@ export function ERC8183Card({ address }: ERC8183Props) {
               method: 'wallet_addEthereumChain',
               params: [
                 {
-                  chainId: '0x4cef52',
+                  chainId: '0xd8',
                   chainName: 'Arc Testnet',
                   rpcUrls: ['https://rpc.testnet.arc.network'],
                   nativeCurrency: {
                     name: 'USDC',
                     symbol: 'USDC',
-                    decimals: 18
+                    decimals: 6
                   },
                   blockExplorerUrls: ['https://testnet.arcscan.app']
                 },
@@ -383,7 +383,7 @@ export function ERC8183Card({ address }: ERC8183Props) {
           <div className="p-6 space-y-4">
             <div>
               <label className="text-xs text-text-secondary block mb-1">Target Network</label>
-              <p className="text-sm font-semibold bg-input p-3 rounded-xl border border-transparent">Arc Testnet (5042002)</p>
+              <p className="text-sm font-semibold bg-input p-3 rounded-xl border border-transparent">Arc Testnet (216)</p>
             </div>
             <div>
               <label className="text-xs text-text-secondary block mb-1">Protocol Contract</label>
